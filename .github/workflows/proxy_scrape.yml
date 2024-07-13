@@ -26,13 +26,18 @@ jobs:
         run: |
           python main.py --scrape
 
-      - name: Update Deployment Time
-        run: |
-          echo "Last proxy scrape time: $(date +'%Y-%m-%d %H:%M:%S %Z')" > README.md
-
       - name: Git Auto Commit
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: Auto Update Proxy Scraping
           branch: main
           push_options: '--force'
+
+      - name: Delete Old Workflow Runs
+        uses: MajorScruffy/delete-old-workflow-runs@v0.3.0
+        with:
+          repository: ${{ github.repository }}
+          workflow: ".github/workflows/proxy_scrape.yml"
+          older-than-seconds: 600  # Delete runs older than 10 minutes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
