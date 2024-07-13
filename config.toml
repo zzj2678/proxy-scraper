@@ -1,0 +1,6 @@
+[default]
+debug = true
+timeout = 10
+proxy_dir = "proxies"
+validate_url = "https://httpbin.smp.io/ip"
+# check_website = "https://checkip.amazonaws.com"

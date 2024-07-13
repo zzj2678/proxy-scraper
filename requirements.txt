@@ -1,0 +1,9 @@
+aiohttp
+playwright
+beautifulsoup4
+aiodns
+aiohttp-socks
+aiofiles
+rich
+fake-useragent
+certifi
