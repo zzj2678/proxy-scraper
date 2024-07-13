@@ -11,7 +11,7 @@
 1. **克隆仓库**：
 
    ```sh
-   git clone https://github.com/yourusername/proxy-scraper.git
+   git clone https://github.com/lalifeier/proxy-scraper.git
    cd proxy-scraper
    ```
 
