@@ -9,6 +9,8 @@ jobs:
   check_ip:
     runs-on: ubuntu-latest
 
+    permissions: write-all
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
