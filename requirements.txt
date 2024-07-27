@@ -8,3 +8,4 @@ rich
 fake-useragent
 certifi
 pycountry
+requests
