@@ -13,6 +13,7 @@ class KuaidailiScraper(ProxyScraperBase):
         return [
             "https://www.kuaidaili.com/free/inha/1",
             "https://www.kuaidaili.com/free/intr/1",
+            "https://www.kuaidaili.com/free/fps"
         ]
 
     def extract_proxies(self, content: str) -> List[Proxy]:

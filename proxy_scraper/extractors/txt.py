@@ -19,6 +19,18 @@ class TxtScraper(ProxyScraperBase):
     def get_urls(self):
         return [
             "https://api.openproxylist.xyz/http.txt",
+            "https://www.proxy-list.download/api/v1/get?type=http",
+            "https://www.proxy-list.download/api/v1/get?type=https",
+            "https://multiproxy.org/txt_all/proxy.txt",
+            "https://multiproxy.org/txt_anon/proxy.txt",
+            "https://proxyspace.pro/http.txt",
+            "https://proxyspace.pro/https.txt",
+            "https://raw.githubusercontent.com/ALIILAPRO/Proxy/main/http.txt",
+            "https://github.com/Anonym0usWork1221/Free-Proxies/raw/main/proxy_files/http_proxies.txt",
+            "https://github.com/Anonym0usWork1221/Free-Proxies/raw/main/proxy_files/https_proxies.txt",
+            "https://github.com/officialputuid/KangProxy/raw/KangProxy/http/http.txt",
+            "https://github.com/officialputuid/KangProxy/raw/KangProxy/https/https.txt",
+            "https://raw.githubusercontent.com/prxchk/proxy-list/main/http.txt"
         ]
 
     async def scrape(self):
