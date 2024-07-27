@@ -2,13 +2,15 @@ import argparse
 import asyncio
 import logging
 
-from proxy_scraper.platform.ip89 import IP89
-from proxy_scraper.platform.ip3366 import IP3366
-from proxy_scraper.platform.kuaidaili import KuaidailiScraper
-from proxy_scraper.platform.proxydb import ProxyDBScraper
-from proxy_scraper.platform.txt import TxtScraper
-from proxy_scraper.platform.zdaye import ZdayeScraper
+from proxy_scraper.extractors.ip89 import IP89
+from proxy_scraper.extractors.ip3366 import IP3366
+from proxy_scraper.extractors.kuaidaili import KuaidailiScraper
+from proxy_scraper.extractors.proxydb import ProxyDBScraper
+from proxy_scraper.extractors.txt import TxtScraper
+from proxy_scraper.extractors.zdaye import ZdayeScraper
+from proxy_scraper.proxy_file_manager import ProxyFileManager
 from proxy_scraper.proxy_validator import ProxyValidator
+from proxy_scraper.proxy_writer import ProxyWriter
 
 logger = logging.getLogger(__name__)
 
@@ -29,10 +31,15 @@ async def scrape_proxies():
 
 async def validate_proxies():
     validator = ProxyValidator()
+    writer = ProxyWriter()
 
     try:
         logger.info("Starting proxy validation...")
-        await validator.validate_proxies_in_directory()
+        proxies = ProxyFileManager.read_proxies_from_raw_directory()
+        valid_proxies = await validator.validate_proxies(proxies)
+        if valid_proxies:
+            writer.save_proxies(valid_proxies)
+            writer.save_country_proxies(valid_proxies)
         logger.info("Proxy validation completed.")
     except Exception as e:
         logger.error(f"Error during proxy validation: {e}")

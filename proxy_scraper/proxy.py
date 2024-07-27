@@ -1,8 +1,7 @@
 
 import logging
-import os
 import ssl
-from typing import List, Optional
+from typing import Optional
 
 import certifi
 from aiohttp import ClientSession
@@ -11,6 +10,7 @@ from fake_useragent import UserAgent
 
 from proxy_scraper.config import CONFIG
 from proxy_scraper.protocol import Protocol
+from proxy_scraper.util.ip_region import IPRegion
 
 SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
 
@@ -27,7 +27,7 @@ headers = {
 logger = logging.getLogger(__name__)
 
 class Proxy:
-    def __init__(self, host: str, port: int, protocol: Protocol, username: Optional[str] = None, password: Optional[str] = None, country: str = ''):
+    def __init__(self, host: str, port: int, protocol: Protocol, username: Optional[str] = None, password: Optional[str] = None, country:Optional[str] = None):
         self.host = host
         self.port = port
         self.protocol = protocol
@@ -76,72 +76,17 @@ class Proxy:
             # Default to HTTP if protocol is not specified
             return self.protocol if self.protocol else 'http'
 
-class ProxyWriter:
-    def save_raw_proxies(self, proxies: List[Proxy], directory: str):
-        if not proxies:
-            return
+    def get_region(self) -> dict:
+        ip_region = IPRegion()
+        try:
+            return ip_region.get_region(self.host)
+        except Exception as e:
+            logger.error(f"Error fetching region data for IP {self.host}: {e}")
+            return {}
 
-        # Create directories if they don't exist
-        os.makedirs(directory, exist_ok=True)
+    def get_country(self) -> str:
+        if self.country:
+            return self.country
 
-        # Group proxies by protocol
-        protocol_groups = {}
-        for proxy in proxies:
-            if proxy.protocol not in protocol_groups:
-                protocol = proxy.protocol
-                protocol_groups[protocol] = []
-            protocol_groups[protocol].append(proxy.get_address())
-
-        # Prepare to write all proxies to files
-        for protocol, proxy_list in protocol_groups.items():
-            filepath = os.path.join(directory, f'{protocol}.txt')
-
-            # Collect all new proxies to write
-            new_proxies = set(proxy_list)
-
-            # Read existing proxies from file
-            existing_proxies = set()
-            if os.path.exists(filepath):
-                with open(filepath, 'r') as f:
-                    existing_proxies = {line.strip() for line in f.readlines()}
-
-            # Filter out duplicates from new proxies
-            new_proxies = new_proxies - existing_proxies
-
-            if new_proxies:
-                with open(filepath, 'a') as f:
-                    f.write('\n'.join(new_proxies) + '\n')
-
-                logger.info(f"Added {len(new_proxies)} new {protocol} proxies to {filepath}")
-            else:
-                logger.info(f"No new proxies to add for {protocol} to {filepath}")
-
-            logger.debug(f"Existing {protocol} proxies in {filepath}: {len(existing_proxies)}")
-
-    def save_proxies(self, proxies: List[Proxy], directory: str):
-        if not proxies:
-            return
-
-        # Create directories if they don't exist
-        os.makedirs(directory, exist_ok=True)
-
-        # Group proxies by protocol
-        protocol_groups = {}
-        for proxy in proxies:
-            if proxy.protocol not in protocol_groups:
-                protocol = proxy.protocol
-                protocol_groups[protocol] = []
-            protocol_groups[protocol].append(proxy.get_address())
-
-        # Prepare to write all proxies to files
-        for protocol, proxy_list in protocol_groups.items():
-            filepath = os.path.join(directory, f'{protocol}.txt')
-
-            # Collect all new proxies to write
-            new_proxies = set(proxy_list)
-
-            # Write new proxies to file (overwrite existing content)
-            with open(filepath, 'w') as f:
-                f.write('\n'.join(new_proxies) + '\n')
-
-            logger.info(f"Added {len(new_proxies)} new {protocol} proxies to {filepath}")
+        region = self.get_region()
+        return region.get('country', 'Unknown')
