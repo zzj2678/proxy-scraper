@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import List
 
 import aiohttp
@@ -52,6 +53,7 @@ class TxtScraper(ProxyScraperBase):
             lines = content.strip().split("\n")
             for line in lines:
                 ip_port = line.strip()
-                ip, port = ip_port.split(":")
-                proxies.append(Proxy(ip, port, "http", ""))
+                if re.match(r'^(\d{1,3}\.){3}\d{1,3}:\d+$', ip_port):
+                  ip, port = ip_port.split(":")
+                  proxies.append(Proxy(ip, port, "http", ""))
         return proxies
