@@ -19,22 +19,10 @@ class ProxyWriter:
 
     def save_raw_proxies(self, proxies: List[Proxy]):
         raw_directory = os.path.join(self.directory, 'raw')
-        self._save_proxies(proxies, raw_directory, append=True)
+        self._save_proxies(proxies, raw_directory, include_country=False, append=True)
 
     def save_proxies(self, proxies: List[Proxy]):
-        self._save_proxies(proxies, self.directory, append=False)
-
-    def _group_proxies_by_country_and_protocol(self, proxies: List[Proxy]) -> Dict[str, Dict[str, List[str]]]:
-        country_protocol_groups = {}
-        for proxy in proxies:
-            country = proxy.get_country()
-            protocol = proxy.protocol
-            if country not in country_protocol_groups:
-                country_protocol_groups[country] = {}
-            if protocol not in country_protocol_groups[country]:
-                country_protocol_groups[country][protocol] = []
-            country_protocol_groups[country][protocol].append(f"{proxy.get_address()}")
-        return country_protocol_groups
+        self._save_proxies(proxies, self.directory, include_country=True, append=False)
 
     def save_country_proxies(self, proxies: List[Proxy]):
         country_protocol_groups = self._group_proxies_by_country_and_protocol(proxies)
@@ -48,11 +36,11 @@ class ProxyWriter:
 
                 filepath = os.path.join(protocol_directory, f'{country_code}.txt')
 
-                new_proxies = set(proxy_list)
-                self._write_proxies_to_file(filepath, new_proxies, append=False)
-                logger.info(f"Saved {len(new_proxies)} {protocol} proxies for {country} to {filepath}")
+                formatted_proxies = {f"{proxy.get_address()}" for proxy in proxy_list}
+                self._write_proxies_to_file(filepath, formatted_proxies, append=False)
+                logger.info(f"Saved {len(formatted_proxies)} {protocol} proxies for {country} to {filepath}")
 
-    def _save_proxies(self, proxies: List[Proxy], directory: str, append: bool):
+    def _save_proxies(self, proxies: List[Proxy], directory: str, include_country: bool, append: bool):
         if not proxies:
             logger.info("No proxies provided to save.")
             return
@@ -64,11 +52,16 @@ class ProxyWriter:
         for protocol, proxy_list in protocol_groups.items():
             filepath = os.path.join(directory, f'{protocol}.txt')
 
-            new_proxies = set(proxy_list)
+            if include_country:
+                formatted_proxies = {f"{proxy.get_address()} {proxy.get_country()}" for proxy in proxy_list}
+            else:
+                formatted_proxies = {proxy.get_address() for proxy in proxy_list}
 
             if append:
                 existing_proxies = self._read_existing_proxies(filepath)
-                new_proxies = new_proxies - existing_proxies
+                new_proxies = {fp for fp in formatted_proxies if fp not in existing_proxies}
+            else:
+                new_proxies = formatted_proxies
 
             if new_proxies:
                 self._write_proxies_to_file(filepath, new_proxies, append)
@@ -76,21 +69,33 @@ class ProxyWriter:
             else:
                 logger.info(f"No new proxies to add for {protocol} to {filepath}")
 
-    def _group_proxies_by_protocol(self, proxies: List[Proxy]) -> dict:
+    def _group_proxies_by_protocol(self, proxies: List[Proxy]) -> Dict[str, List[Proxy]]:
         protocol_groups = {}
         for proxy in proxies:
             protocol = proxy.protocol
             if protocol not in protocol_groups:
                 protocol_groups[protocol] = []
-            protocol_groups[protocol].append(f"{proxy.get_address()} {proxy.get_country()}")
+            protocol_groups[protocol].append(proxy)
         return protocol_groups
+
+    def _group_proxies_by_country_and_protocol(self, proxies: List[Proxy]) -> Dict[str, Dict[str, List[Proxy]]]:
+        country_protocol_groups = {}
+        for proxy in proxies:
+            country = proxy.get_country()
+            protocol = proxy.protocol
+            if country not in country_protocol_groups:
+                country_protocol_groups[country] = {}
+            if protocol not in country_protocol_groups[country]:
+                country_protocol_groups[country][protocol] = []
+            country_protocol_groups[country][protocol].append(proxy)
+        return country_protocol_groups
 
     def _read_existing_proxies(self, filepath: str) -> Set[str]:
         if not os.path.exists(filepath):
             return set()
         try:
             with open(filepath, 'r') as f:
-                return {line.strip() for line in f.readlines()}
+                return {line.strip().split()[0] for line in f.readlines()}  # Extract only the IP part
         except Exception as e:
             logger.error(f"Error reading proxies from {filepath}: {e}")
             return set()
