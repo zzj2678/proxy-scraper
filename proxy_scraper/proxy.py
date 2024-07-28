@@ -4,7 +4,7 @@ import ssl
 from typing import Optional
 
 import certifi
-from aiohttp import ClientSession
+from aiohttp import ClientError, ClientSession
 from aiohttp_socks import ProxyConnector, ProxyType
 from fake_useragent import UserAgent
 
@@ -63,6 +63,8 @@ class Proxy:
                             logger.debug(f"Proxy {self} is valid.")
                             return True
                     logger.debug(f"Proxy {self} is invalid.")
+        except ClientError as e:
+            logger.debug(f"Network error while validating proxy {self}: {e}")
         except Exception as e:
             logger.debug(f"Error validating proxy {self}: {e}")
         return False

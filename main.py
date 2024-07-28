@@ -6,7 +6,7 @@ from proxy_scraper.extractors.ip89 import IP89
 from proxy_scraper.extractors.ip3366 import IP3366
 from proxy_scraper.extractors.kuaidaili import KuaidailiScraper
 from proxy_scraper.extractors.proxydb import ProxyDBScraper
-from proxy_scraper.extractors.txt import TxtScraper
+from proxy_scraper.extractors.txt_proxy import TxtProxyScraper
 from proxy_scraper.extractors.zdaye import ZdayeScraper
 from proxy_scraper.proxy_file_manager import ProxyFileManager
 from proxy_scraper.proxy_validator import ProxyValidator
@@ -21,7 +21,7 @@ async def scrape_proxies():
         ZdayeScraper(),
         IP3366(),
         IP89(),
-        TxtScraper(),
+        TxtProxyScraper(),
     ]
 
     logger.info("Starting scraping proxies...")
