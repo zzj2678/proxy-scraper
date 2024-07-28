@@ -9,13 +9,16 @@ from proxy_scraper.util.xdbSearcher import XdbSearcher
 
 logger = logging.getLogger(__name__)
 
+
 class IPInfo:
     _instance = None
     DB_URL = (
         "https://mirror.ghproxy.com/https://raw.githubusercontent.com/lionsoul2014/ip2region/master/data/ip2region.xdb"
     )
     DB_PATH = "ip2region.xdb"
-    API_URL = "http://ip-api.com/json/{}?lang=zh-CN"
+    API_URL = "https://ip-api.com/json/{}?lang=zh-CN"
+
+    FALLBACK_API = "https://ipinfo.io/{}/json"
 
     RETRY_WAIT_TIME = 45  # Wait time in seconds if rate-limited
 
@@ -84,24 +87,32 @@ class IPInfo:
             data = response.json()
 
             if data.get("status") == "fail":
-              # Rate limited or other failure
-              logger.warning(f"Request failed for IP {ip}. Status: {data.get('message')}. Retrying after {self.RETRY_WAIT_TIME} seconds.")
-              time.sleep(self.RETRY_WAIT_TIME)
-              response = requests.get(self.API_URL.format(ip))
-              data = response.json()
+                # Rate limited or other failure
+                logger.warning(
+                    f"Request failed for IP {ip}. Status: {data.get('message')}. Retrying after {self.RETRY_WAIT_TIME} seconds."
+                )
+                time.sleep(self.RETRY_WAIT_TIME)
+                response = requests.get(self.API_URL.format(ip))
+                data = response.json()
 
             if data.get("status") == "fail":
-              # If still failing, log the error and return a fallback structure
-              logger.error(f"Repeated failure for IP {ip}. Status: {data.get('message')}.")
-              return {"ip": ip, "country": "", "region": "", "province": "", "city": "", "isp": ""}
+                logger.warning(f"Using fallback API for IP {ip}")
+                response = requests.get(self.FALLBACK_API.format(ip))
+                data = response.json()
+
+            country = data.get("country")
+            countryCode = data.get("countryCode", data.get("country", ""))
+            region = data.get("regionName", data.get("region", ""))
+            city = data.get("city", "")
+            isp = data.get("isp", data.get("org", ""))
 
             region_info = {
                 "ip": ip,
-                "country": data.get("country", ""),
-                "region": data.get("regionName", ""),
-                "province": data.get("regionName", ""),  # Adjust if needed
-                "city": data.get("city", ""),
-                "isp": data.get("isp", ""),
+                "country": country,
+                "countryCode": countryCode,
+                "region": region,
+                "city": city,
+                "isp": isp,
             }
             logger.info(f"Region data for IP {ip} from API: {region_info}")
             return region_info
@@ -120,6 +131,6 @@ location = IPInfo()
 # if __name__ == "__main__":
 #     ip = "176.99.2.43"
 #     info = IPInfo()
-    # region_info = info.get_region(ip)
-    # print(f"Region info for IP {ip}: {region_info}")
-    # print(info.get_region("160.86.242.23"))
+# region_info = info.get_region(ip)
+# print(f"Region info for IP {ip}: {region_info}")
+# print(info.get_region("160.86.242.23"))

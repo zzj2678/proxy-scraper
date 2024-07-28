@@ -55,3 +55,6 @@ class GEO:
         else:
             logger.warning(f"Could not normalize country name '{name}'.")
             return None
+
+# if __name__ == "__main__":
+    # print(GEO().get_country_code("CN"))
