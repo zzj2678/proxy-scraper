@@ -1,5 +1,6 @@
 import logging
 import random
+from functools import lru_cache
 from typing import Optional
 
 import pycountry
@@ -17,6 +18,7 @@ class GEO:
         """Return a random GeoNames username."""
         return random.choice(self.geonames_usernames)
 
+    @lru_cache(maxsize=128)  # Adjust the maxsize according to your memory constraints
     def _translate_country_name(self, name: str) -> Optional[str]:
         """Translate a country name to its ISO 3166-1 alpha-2 code using GeoNames API."""
         username = self._get_random_username()
@@ -31,6 +33,7 @@ class GEO:
             logger.error(f"Error translating country name '{name}' using GeoNames: {e}")
         return None
 
+    @lru_cache(maxsize=128)
     def _get_country_code_from_pycountry(self, name: str) -> Optional[str]:
         """Get the ISO 3166-1 alpha-2 code using pycountry."""
         try:
