@@ -7,6 +7,7 @@
 #
 
 import io
+import logging
 import socket
 import struct
 import sys
@@ -18,53 +19,58 @@ VectorIndexCols = 256
 VectorIndexSize = 8
 SegmentIndexSize = 14
 
+logger = logging.getLogger(__name__)
 
 class XdbSearcher(object):
     __f = None
-
-    # the minimal memory allocation.
     vectorIndex = None
-    # 整个读取xdb，保存在内存中
     contentBuff = None
 
     @staticmethod
     def loadVectorIndexFromFile(dbfile):
         try:
+            logger.info(f"Loading vector index from file: {dbfile}")
             f = io.open(dbfile, "rb")
             f.seek(HeaderInfoLength)
             vi_len = VectorIndexRows * VectorIndexCols * SegmentIndexSize
             vector_data = f.read(vi_len)
             f.close()
+            logger.info(f"Vector index loaded successfully from {dbfile}")
             return vector_data
         except IOError as e:
-            print("[Error]: %s" % e)
+            logger.error(f"Error loading vector index from {dbfile}: {e}")
+            raise
 
     @staticmethod
     def loadContentFromFile(dbfile):
         try:
+            logger.info(f"Loading entire content from file: {dbfile}")
             f = io.open(dbfile, "rb")
             all_data = f.read()
             f.close()
+            logger.info(f"Content loaded successfully from {dbfile}")
             return all_data
         except IOError as e:
-            print("[Error]: %s" % e)
+            logger.error(f"Error loading content from {dbfile}: {e}")
+            raise
 
     def __init__(self, dbfile=None, vectorIndex=None, contentBuff=None):
         self.initDatabase(dbfile, vectorIndex, contentBuff)
 
     def search(self, ip):
+        logger.info(f"Searching for IP: {ip}")
         if isinstance(ip, str):
-            if not ip.isdigit(): ip = self.ip2long(ip)
-            return self.searchByIPLong(ip)
-        else:
-            return self.searchByIPLong(ip)
+            if not ip.isdigit():
+                ip = self.ip2long(ip)
+        return self.searchByIPLong(ip)
 
     def searchByIPStr(self, ip):
-        if not ip.isdigit(): ip = self.ip2long(ip)
+        if not ip.isdigit():
+            ip = self.ip2long(ip)
         return self.searchByIPLong(ip)
 
     def searchByIPLong(self, ip):
-        # locate the segment index block based on the vector index
+        logger.debug(f"Searching by IP long: {ip}")
         sPtr = ePtr = 0
         il0 = (int)((ip >> 24) & 0xFF)
         il1 = (int)((ip >> 16) & 0xFF)
@@ -82,14 +88,14 @@ class XdbSearcher(object):
             sPtr = self.getLong(buffer_ptr, 0)
             ePtr = self.getLong(buffer_ptr, 4)
 
-        # binary search the segment index block to get the region info
+        logger.debug(f"Segment pointer range: {sPtr} - {ePtr}")
+
         dataLen = dataPtr = int(-1)
         l = int(0)
         h = int((ePtr - sPtr) / SegmentIndexSize)
         while l <= h:
             m = int((l + h) >> 1)
             p = int(sPtr + m * SegmentIndexSize)
-            # read the segment index
             buffer_sip = self.readBuffer(p, SegmentIndexSize)
             sip = self.getLong(buffer_sip, 0)
             if ip < sip:
@@ -103,51 +109,45 @@ class XdbSearcher(object):
                     dataPtr = self.getLong(buffer_sip, 10)
                     break
 
-        # empty match interception
         if dataPtr < 0:
+            logger.info(f"No matching region found for IP: {ip}")
             return ""
 
         buffer_string = self.readBuffer(dataPtr, dataLen)
         return_string = buffer_string.decode("utf-8")
+        logger.info(f"Region found for IP {ip}: {return_string}")
         return return_string
 
     def readBuffer(self, offset, length):
-        buffer = None
-        # check the in-memory buffer first
         if self.contentBuff is not None:
-            buffer = self.contentBuff[offset:offset + length]
-            return buffer
-
-        # read from the file handle
+            return self.contentBuff[offset:offset + length]
         if self.__f is not None:
             self.__f.seek(offset)
-            buffer = self.__f.read(length)
-        return buffer
+            return self.__f.read(length)
+        return None
 
     def initDatabase(self, dbfile, vi, cb):
-        """
-        " initialize the database for search
-        " param: dbFile, vectorIndex, contentBuff
-        """
         try:
             if cb is not None:
+                logger.info("Initializing with content buffer")
                 self.__f = None
                 self.vectorIndex = None
                 self.contentBuff = cb
             else:
+                logger.info(f"Initializing with database file: {dbfile}")
                 self.__f = io.open(dbfile, "rb")
                 self.vectorIndex = vi
         except IOError as e:
-            print("[Error]: %s" % e)
+            logger.error(f"Error initializing database: {e}")
             sys.exit()
 
     def ip2long(self, ip):
+        logger.debug(f"Converting IP to long: {ip}")
         _ip = socket.inet_aton(ip)
         return struct.unpack("!L", _ip)[0]
 
     def isip(self, ip):
         p = ip.split(".")
-
         if len(p) != 4: return False
         for pp in p:
             if not pp.isdigit(): return False
@@ -161,14 +161,14 @@ class XdbSearcher(object):
         return 0
 
     def getInt2(self, b, offset):
-        return ((b[offset] & 0x000000FF) | (b[offset+1] << 8))
+        return ((b[offset] & 0x000000FF) | (b[offset + 1] << 8))
 
     def close(self):
         if self.__f is not None:
             self.__f.close()
+            logger.info("Database file closed")
         self.vectorIndex = None
         self.contentBuff = None
-
 
 # if __name__ == '__main__':
 #     ip_array = [
