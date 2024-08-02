@@ -6,7 +6,6 @@ from proxy_scraper.config import (
     CONFIG,  # Assuming CONFIG is defined and contains 'proxy_dir'
 )
 from proxy_scraper.proxy import Proxy
-from proxy_scraper.util.geo import GEO
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +14,6 @@ PROXY_DIR = CONFIG['proxy_dir']  # Default directory for saving proxies
 class ProxyWriter:
     def __init__(self, directory: str = PROXY_DIR):
         self.directory = directory
-        self.geo = GEO()
 
     def save_raw_proxies(self, proxies: List[Proxy]):
         raw_directory = os.path.join(self.directory, 'raw')
@@ -27,18 +25,16 @@ class ProxyWriter:
     def save_country_proxies(self, proxies: List[Proxy]):
         country_protocol_groups = self._group_proxies_by_country_and_protocol(proxies)
 
-        for country, protocol_groups in country_protocol_groups.items():
+        for country_code, protocol_groups in country_protocol_groups.items():
             for protocol, proxy_list in protocol_groups.items():
                 protocol_directory = os.path.join(self.directory, protocol)
                 os.makedirs(protocol_directory, exist_ok=True)
-
-                country_code = self.geo.get_country_code(country)
 
                 filepath = os.path.join(protocol_directory, f'{country_code}.txt')
 
                 formatted_proxies = {f"{proxy.get_address()}" for proxy in proxy_list}
                 self._write_proxies_to_file(filepath, formatted_proxies, append=False)
-                logger.info(f"Saved {len(formatted_proxies)} {protocol} proxies for {country} to {filepath}")
+                logger.info(f"Saved {len(formatted_proxies)} {protocol} proxies for {country_code} to {filepath}")
 
     def _save_proxies(self, proxies: List[Proxy], directory: str, include_country: bool, append: bool):
         if not proxies:

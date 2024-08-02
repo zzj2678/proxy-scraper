@@ -9,3 +9,4 @@ fake-useragent
 certifi
 pycountry
 requests
+geoip2

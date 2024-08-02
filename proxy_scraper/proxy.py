@@ -10,7 +10,7 @@ from fake_useragent import UserAgent
 
 from proxy_scraper.config import CONFIG
 from proxy_scraper.protocol import Protocol
-from proxy_scraper.util.location import location
+from proxy_scraper.util.geo import geo_info
 
 SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
 
@@ -80,7 +80,7 @@ class Proxy:
 
     def get_region(self) -> dict:
         try:
-            return location.get_region(self.host)
+            return geo_info.get_region(self.host)
         except Exception as e:
             logger.error(f"Error fetching region data for IP {self.host}: {e}")
             return {}
@@ -90,4 +90,4 @@ class Proxy:
             return self.country
 
         region = self.get_region()
-        return region.get('country', 'Unknown')
+        return region.get('countryCode', 'Unknown')
