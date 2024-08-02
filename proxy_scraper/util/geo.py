@@ -158,9 +158,9 @@ class GeoInfo:
 
 geo_info = GeoInfo()
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-    geo_info = GeoInfo()
-    ip = "176.99.2.43"
-    print(geo_info.get_region(ip))
-    # print(geo_info.get_country_code("Germany"))
+# if __name__ == "__main__":
+#     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+#     geo_info = GeoInfo()
+#     ip = "176.99.2.43"
+#     print(geo_info.get_region(ip))
+#     # print(geo_info.get_country_code("Germany"))
