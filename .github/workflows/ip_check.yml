@@ -3,7 +3,7 @@ name: IP Check
 on:
   workflow_dispatch:
   schedule:
-    - cron: "30 * * * *"
+    - cron: "30 */2 * * *"
 
 jobs:
   check_ip:
